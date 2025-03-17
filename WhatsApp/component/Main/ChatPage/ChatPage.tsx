@@ -25,6 +25,7 @@ interface Message {
   voice?: string;
   emoji?: string;
   userId?: string;
+  timestamp?: number;
 }
 
 // Connect to backend socket server
@@ -46,7 +47,6 @@ const ChatPage: React.FC<ChatPageProps> = ({route}) => {
   const [isRecording, setIsRecording] = useState(false);
   const [audioPath, setAudioPath] = useState('');
   const [input, setInput] = useState('');
-  console.log(messages);
   useEffect(() => {
     async function requestPermissions() {
       try {
@@ -166,14 +166,31 @@ const ChatPage: React.FC<ChatPageProps> = ({route}) => {
     setMessages(prev => [...prev, newMessage]);
     setInput('');
   };
+  const formatTime = (timestamp: number | undefined) => {
+    if (!timestamp) {
+      return '';
+    }
+    const date = new Date(timestamp);
+    let hours = date.getHours();
+    const minutes = date.getMinutes().toString().padStart(2, '0');
+    const ampm = hours >= 12 ? 'PM' : 'AM';
+    hours = hours % 12;
+    hours = hours ? hours : 12;
+    return `${hours}:${minutes} ${ampm}`;
+  };
 
   return (
     <View style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
-        <Text style={styles.headerText}>
-          {user.firstName} {user.lastName}
-        </Text>
+        <View style={styles.nameStatusContainer}>
+          {' '}
+          {/* Explicit container for name & status */}
+          <Text style={styles.headerText}>
+            {user.firstName} {user.lastName}
+          </Text>
+          <Text style={styles.statusText}>Hello</Text>
+        </View>
         <View style={styles.iconsContainer}>
           <TouchableOpacity style={styles.iconButton}>
             <Icon name="phone" size={30} color="#fff" />
@@ -196,7 +213,10 @@ const ChatPage: React.FC<ChatPageProps> = ({route}) => {
                 ? styles.myMessage
                 : styles.otherMessage,
             ]}>
-            <Text style={styles.messageText}>{item.text}</Text>
+            <View style={styles.messageRow}>
+              <Text style={styles.messageText}>{item.text}</Text>
+              <Text style={styles.timeText}>{formatTime(item.timestamp)}</Text>
+            </View>
             {item.voice && (
               <TouchableOpacity onPress={() => playAudio(item.voice)}>
                 <Text>▶️ Play Audio</Text>
@@ -218,11 +238,21 @@ const ChatPage: React.FC<ChatPageProps> = ({route}) => {
             placeholder="Type a message..."
           />
           <TouchableOpacity onPress={sendMessage} style={styles.sendButton}>
-            <Text style={styles.sendButtonText}>Send</Text>
+            <Icon style={styles.sendButtonText} name="paper-plane" size={20} />
           </TouchableOpacity>
           <TouchableOpacity
             onPress={isRecording ? stopRecording : startRecording}>
-            <Text>{isRecording ? 'Stop Recording' : '🎤 Record'}</Text>
+            <Text>
+              {isRecording ? (
+                <Icon
+                  style={styles.microPhone}
+                  name="microphone-lines"
+                  size={30}
+                />
+              ) : (
+                <Icon style={styles.microPhone} name="microphone" size={30} />
+              )}
+            </Text>
           </TouchableOpacity>
         </View>
       </KeyboardAvoidingView>
@@ -242,6 +272,20 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between', // Aligns items on each side
     alignItems: 'center',
   },
+  messageRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+  },
+  messageText: {
+    fontSize: 16,
+    // ... other text styles
+  },
+  timeText: {
+    fontSize: 12,
+    color: '#888',
+    marginBottom: 2,
+    marginLeft: 5,
+  },
   headerText: {
     fontSize: 18,
     fontWeight: 'bold',
@@ -249,6 +293,9 @@ const styles = StyleSheet.create({
   },
   iconButton: {
     marginLeft: 20, // Spacing between icons
+  },
+  microPhone: {
+    marginRight: 20,
   },
   iconsContainer: {
     flexDirection: 'row',
@@ -271,9 +318,7 @@ const styles = StyleSheet.create({
     alignSelf: 'flex-start',
     backgroundColor: 'white',
   },
-  messageText: {
-    fontSize: 16,
-  },
+
   inputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -297,6 +342,15 @@ const styles = StyleSheet.create({
   sendButtonText: {
     color: 'white',
     fontWeight: 'bold',
+  },
+  nameStatusContainer: {
+    flexDirection: 'column', // Ensures name and status are stacked vertically
+    justifyContent: 'center', // centers the name and status vertically in the nameStatusContainer
+  },
+  statusText: {
+    fontSize: 14, // Adjust size as needed
+    color: '#ddd', // A lighter color to differentiate
+    marginTop: 2, // Spacing between name and status
   },
 });
 
